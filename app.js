@@ -37,8 +37,8 @@ $('#minKB').value=rule.min;$('#maxKB').value=rule.max;$('#outFormat').value=rule
 if(rule.pixels)setDimensions(...rule.pixels);
 else if(doc==='photo')setDimensions(413,531);else if(doc==='signature')setDimensions(472,236);else if(doc==='fingerprint')setDimensions(354,354);else setDimensions(709,354);
 $('#presetNote').innerHTML='<b>'+examRules[exam].name+'</b><br>'+rule.info+'<br><a href="'+examRules[exam].source+'" target="_blank" rel="noopener">Open official source ↗</a><br><span>'+examRules[exam].live+'</span>'+(rule.pixels?'':'<br><b>Pixel dimensions are not stated by this source.</b> The canvas size shown is only a working crop, not an official requirement.');
-}else if(exam==='custom'){$('#presetNote').textContent='Custom mode: enter the exact dimensions and file-size range from your current official notification.'}
-else{$('#presetNote').textContent='This document type is not listed in the selected exam source. Use Custom / other exam and check the current notice.'}
+}else if(exam==='custom'){$('#minKB').value=0;$('#maxKB').value=200;$('#outFormat').value='image/jpeg';$('#presetNote').textContent='Custom mode: enter the exact dimensions and file-size range from your current official notification.'}
+else{$('#minKB').value=0;$('#maxKB').value=200;$('#outFormat').value='image/jpeg';$('#presetNote').textContent='This document type is not listed in the selected exam source. Use Custom / other exam and check the current notice.'}
 activeMode(doc);
 }
 $('#examPreset').onchange=preset;$('#documentType').onchange=preset;
@@ -54,6 +54,7 @@ pad.addEventListener('pointermove',e=>{if(!drawing)return;const q=point(e);pctx.
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,()=>drawing=false));
 function blob(c,type,q){return new Promise(resolve=>c.toBlob(resolve,type,q))}
 $('#exportExam').onclick=async()=>{
+if($('#examPreset').value==='tnpsc2026'&&mode==='photo'){const nm=$('#tnpscName').value.trim(),dt=$('#tnpscDate').value;if(!nm||!dt){$('#studioStatus').textContent='TNPSC requires the candidate name and date of photography on the photo. Fill both fields first.';return}if(dt<'2026-08-11'){$('#studioStatus').textContent='For TNPSC Notification 07/2026, the photograph date must be on or after 11 August 2026.';return}}
 const [w,h]=dims(),type=$('#outFormat').value,max=Math.max(1,Number($('#maxKB').value)||200),min=Math.max(0,Number($('#minKB').value)||0);
 let out=document.createElement('canvas');out.width=w;out.height=h;let o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,w,h);
 if(mode==='signature'){o.drawImage(pad,0,0,w,h)}else{o.drawImage(canvas,0,0,w,h)}
