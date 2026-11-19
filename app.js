@@ -15,7 +15,7 @@ const presets={photo:[413,531],signature:[472,236],handwriting:[709,236],fingerp
 let mode='photo',source=null,rotation=0,drawing=false,last=null;
 const dims=()=>[Math.max(1,Math.min(6000,Number($('#outWidth').value)||413)),Math.max(1,Math.min(6000,Number($('#outHeight').value)||531))];
 function setDimensions(w,h){$('#outWidth').value=w;$('#outHeight').value=h;canvas.width=w;canvas.height=h;$('#previewDimensions').textContent=w+' × '+h+' px'}
-function activeMode(m){mode=m;if(m==='handwriting')source=null;$('[data-studio]').forEach(b=>b.classList.toggle('active',b.dataset.studio===m));$('#uploadPanel').hidden=m==='handwriting'||m==='signature';$('#handwritingPanel').hidden=m!=='handwriting';$('#signaturePanel').hidden=m!=='signature';$('#fingerprintPanel').hidden=m!=='fingerprint';pad.hidden=m!=='signature';canvas.hidden=m==='signature';redraw()}
+function activeMode(m){mode=m;if(m==='handwriting')source=null;$$('[data-studio]').forEach(b=>b.classList.toggle('active',b.dataset.studio===m));$('#uploadPanel').hidden=m==='handwriting'||m==='signature';$('#handwritingPanel').hidden=m!=='handwriting';$('#signaturePanel').hidden=m!=='signature';$('#fingerprintPanel').hidden=m!=='fingerprint';pad.hidden=m!=='signature';canvas.hidden=m==='signature';redraw()}
 function redraw(){
 const [w,h]=dims();if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}$('#previewDimensions').textContent=w+' × '+h+' px';
 if(mode==='signature'){pad.style.width='min(100%, 700px)';pad.style.height='auto';return}
@@ -27,7 +27,7 @@ ctx.restore();
 function wrapText(c,text,x,y,maxWidth,lineHeight){let words=text.split(/\s+/),line='',lines=[];for(const word of words){let test=line?line+' '+word:word;if(c.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);const start=y-(lines.length-1)*lineHeight/2;lines.forEach((v,i)=>c.fillText(v,x,start+i*lineHeight))}
 function preset(){const v=$('#examPreset').value;if(presets[v])setDimensions(...presets[v]);if(v!=='custom')activeMode(v)}
 $('#examPreset').onchange=preset;
-$('[data-studio]').forEach(b=>b.onclick=()=>{const m=b.dataset.studio;$('#examPreset').value=m;preset();activeMode(m)});
+$$('[data-studio]').forEach(b=>b.onclick=()=>{const m=b.dataset.studio;$('#examPreset').value=m;preset();activeMode(m)});
 ['outWidth','outHeight','bgColor','brightness','contrast','fitMode','quality','handText','inkColor'].forEach(id=>$('#'+id).addEventListener('input',redraw));
 $('#imageUpload').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){alert('Choose an image file.');return}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{source=img;rotation=0;URL.revokeObjectURL(url);$('#studioStatus').textContent='Image loaded: '+file.name;redraw()};img.onerror=()=>{URL.revokeObjectURL(url);alert('Could not open that image. Try JPG or PNG.');};img.src=url};
 $('#rotateImage').onclick=()=>{rotation=(rotation+90)%360;redraw()};
