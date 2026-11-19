@@ -8,7 +8,7 @@ let slides=load('slides',[{html:'<h1>Your big idea starts here</h1><p>Click to e
 
 // Exam Photo Studio — all image processing stays on-device.
 const studio=(()=>{
-const $=s=>document.querySelector(s),$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const canvas=$('#examCanvas'),ctx=canvas.getContext('2d'),pad=$('#signaturePad'),pctx=pad.getContext('2d');
 if(!canvas||!pad)return null;
 const presets={photo:[413,531],signature:[472,236],handwriting:[709,236],fingerprint:[354,354]};
