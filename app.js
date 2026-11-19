@@ -15,7 +15,7 @@ const presets={photo:[413,531],signature:[472,236],handwriting:[709,236],fingerp
 let mode='photo',source=null,rotation=0,drawing=false,last=null;
 const dims=()=>[Math.max(1,Math.min(6000,Number($('#outWidth').value)||413)),Math.max(1,Math.min(6000,Number($('#outHeight').value)||531))];
 function setDimensions(w,h){$('#outWidth').value=w;$('#outHeight').value=h;canvas.width=w;canvas.height=h;$('#previewDimensions').textContent=w+' × '+h+' px'}
-function activeMode(m){mode=m;$('[data-studio]').forEach(b=>b.classList.toggle('active',b.dataset.studio===m));$('#uploadPanel').hidden=m==='handwriting'||m==='signature';$('#handwritingPanel').hidden=m!=='handwriting';$('#signaturePanel').hidden=m!=='signature';$('#fingerprintPanel').hidden=m!=='fingerprint';pad.hidden=m!=='signature';canvas.hidden=m==='signature';redraw()}
+function activeMode(m){mode=m;if(m==='handwriting')source=null;$('[data-studio]').forEach(b=>b.classList.toggle('active',b.dataset.studio===m));$('#uploadPanel').hidden=m==='handwriting'||m==='signature';$('#handwritingPanel').hidden=m!=='handwriting';$('#signaturePanel').hidden=m!=='signature';$('#fingerprintPanel').hidden=m!=='fingerprint';pad.hidden=m!=='signature';canvas.hidden=m==='signature';redraw()}
 function redraw(){
 const [w,h]=dims();if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}$('#previewDimensions').textContent=w+' × '+h+' px';
 if(mode==='signature'){pad.style.width='min(100%, 700px)';pad.style.height='auto';return}
