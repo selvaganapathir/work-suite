@@ -12,26 +12,41 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const canvas=$('#examCanvas'),ctx=canvas.getContext('2d'),pad=$('#signaturePad'),pctx=pad.getContext('2d');
 if(!canvas||!pad)return null;
 const presets={photo:[413,531],signature:[472,236],handwriting:[709,236],fingerprint:[354,354]};
+const examRules={
+jee2027:{name:'JEE Main 2027 · NTA Information Bulletin',source:'https://cdnbbsr.s3waas.gov.in/s3f8e59f4b2fe7c5705bf878bbd494ccdf/uploads/2026/10/202610241890224107.pdf',live:'A live photograph is also required during the NTA application. Capture that directly in the official portal.',rules:{photo:{min:10,max:200,format:'image/jpeg',pixels:null,info:'Recent colour passport photo; 80% face including ears, no mask, white background. JPG/JPEG 10–200 KB.'},signature:{min:10,max:100,format:'image/jpeg',pixels:null,info:'Clear signature scan. JPG/JPEG 10–100 KB.'}}},
+neet2026:{name:'NEET UG 2026 · NTA Information Bulletin',source:'https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/02/202602231394640855.pdf',live:'A live photograph is required in the NTA application. Use the official portal capture flow.',rules:{photo:{min:10,max:200,format:'image/jpeg',pixels:null,info:'Recent passport photo; 80% face including ears, without mask, white background. JPG/JPEG 10–200 KB.'},signature:{min:10,max:100,format:'image/jpeg',pixels:null,info:'JPG/JPEG 10–100 KB.'},fingerprint:{min:10,max:200,format:'image/jpeg',pixels:null,info:'Left and right hand fingers and thumb impressions. JPG/JPEG 10–200 KB.'}}},
+tnpsc2026:{name:'TNPSC Group II / IIA 2026 · Notification 07/2026',source:'https://tnpsc.gov.in/document/english/07_2026%20Dated_11.08.2026%20English%20version.pdf',live:'Photo must show candidate name and date of photography at the bottom. The notice disallows mobile-phone photos and selfies.',rules:{photo:{min:20,max:50,format:'image/jpeg',pixels:[130,170],info:'130 × 170 px. Candidate name and date of photography must appear at the bottom. JPG 20–50 KB.'},signature:{min:10,max:20,format:'image/jpeg',pixels:[230,75],info:'230 × 75 px. Blue or black ink on white paper; 200 DPI. JPG 10–20 KB.'}}},
+ibps2026:{name:'IBPS CRP 2026–27 · Official Calendar (16 Jan 2026)',source:'https://www.ibps.in/wp-content/uploads/IBPS_CALENDAR_2026-27_final.pdf',live:'Live photograph capture is also required. Individual CRP notifications may add or change dimensions and declaration wording; verify the relevant notification.',rules:{photo:{min:20,max:50,format:'image/jpeg',pixels:null,info:'Recent clear passport colour photo. JPEG 20–50 KB. Calendar does not specify pixel dimensions.'},signature:{min:10,max:20,format:'image/jpeg',pixels:null,info:'Clear signature, not in capital letters. JPEG 10–20 KB. Calendar does not specify pixel dimensions.'},fingerprint:{min:20,max:50,format:'image/jpeg',pixels:null,info:'Thumb impression. JPEG 20–50 KB. Calendar does not specify pixel dimensions.'},handwriting:{min:50,max:100,format:'image/jpeg',pixels:null,info:'Scanned handwritten declaration. Exact wording and detailed rules are in the individual CRP notification. JPEG 50–100 KB.'}}}
+};
 let mode='photo',source=null,rotation=0,drawing=false,last=null;
 const dims=()=>[Math.max(1,Math.min(6000,Number($('#outWidth').value)||413)),Math.max(1,Math.min(6000,Number($('#outHeight').value)||531))];
 function setDimensions(w,h){$('#outWidth').value=w;$('#outHeight').value=h;canvas.width=w;canvas.height=h;$('#previewDimensions').textContent=w+' × '+h+' px'}
-function activeMode(m){mode=m;if(m==='handwriting')source=null;$$('[data-studio]').forEach(b=>b.classList.toggle('active',b.dataset.studio===m));$('#uploadPanel').hidden=m==='handwriting'||m==='signature';$('#handwritingPanel').hidden=m!=='handwriting';$('#signaturePanel').hidden=m!=='signature';$('#fingerprintPanel').hidden=m!=='fingerprint';pad.hidden=m!=='signature';canvas.hidden=m==='signature';redraw()}
+function activeMode(m){mode=m;$('[data-studio]').forEach(b=>b.classList.toggle('active',b.dataset.studio===m));$('#uploadPanel').hidden=false;$('#handwritingPanel').hidden=m!=='handwriting';$('#signaturePanel').hidden=m!=='signature';$('#fingerprintPanel').hidden=m!=='fingerprint';pad.hidden=m!=='signature';canvas.hidden=m==='signature';redraw()}
 function redraw(){
 const [w,h]=dims();if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}$('#previewDimensions').textContent=w+' × '+h+' px';
-if(mode==='signature'){pad.style.width='min(100%, 700px)';pad.style.height='auto';return}
+if(mode==='signature'){pad.style.width='min(100%, 700px)';pad.style.height='auto';pctx.clearRect(0,0,pad.width,pad.height);pctx.fillStyle='#fff';pctx.fillRect(0,0,pad.width,pad.height);if(source){const scale=Math.min(pad.width/source.width,pad.height/source.height),dw=source.width*scale,dh=source.height*scale;pctx.drawImage(source,(pad.width-dw)/2,(pad.height-dh)/2,dw,dh)}return}
 ctx.save();ctx.clearRect(0,0,w,h);ctx.fillStyle=$('#bgColor').value||'#fff';ctx.fillRect(0,0,w,h);
-if(mode==='handwriting'&&!source){ctx.fillStyle=$('#inkColor').value;ctx.textBaseline='middle';ctx.font=Math.max(18,Math.round(h*.16))+'px "Comic Sans MS", cursive';const txt=$('#handText').value||'Your handwritten declaration';wrapText(ctx,txt,Math.round(w*.06),h*.5,w*.88,Math.round(h*.22));}
-else if(source){const bw=source.width,bh=source.height,rot=rotation%360;ctx.filter='brightness('+$('#brightness').value+'%) contrast('+$('#contrast').value+'%)';if(rot===90||rot===270){const scale=$('#fitMode').value==='cover'?Math.max(w/bh,h/bw):Math.min(w/bh,h/bw);ctx.translate(w/2,h/2);ctx.rotate(rot*Math.PI/180);ctx.drawImage(source,-bw*scale/2,-bh*scale/2,bw*scale,bh*scale)}else{const scale=$('#fitMode').value==='cover'?Math.max(w/bw,h/bh):Math.min(w/bw,h/bh);const dw=bw*scale,dh=bh*scale;ctx.drawImage(source,(w-dw)/2,(h-dh)/2,dw,dh)}ctx.filter='none'}
+if(source){const bw=source.width,bh=source.height,rot=rotation%360;ctx.filter='brightness('+$('#brightness').value+'%) contrast('+$('#contrast').value+'%)';if(rot===90||rot===270){const scale=$('#fitMode').value==='cover'?Math.max(w/bh,h/bw):Math.min(w/bh,h/bw);ctx.translate(w/2,h/2);ctx.rotate(rot*Math.PI/180);ctx.drawImage(source,-bw*scale/2,-bh*scale/2,bw*scale,bh*scale)}else{const scale=$('#fitMode').value==='cover'?Math.max(w/bw,h/bh):Math.min(w/bw,h/bh);const dw=bw*scale,dh=bh*scale;ctx.drawImage(source,(w-dw)/2,(h-dh)/2,dw,dh)}ctx.filter='none'}
 ctx.restore();
 }
 function wrapText(c,text,x,y,maxWidth,lineHeight){let words=text.split(/\s+/),line='',lines=[];for(const word of words){let test=line?line+' '+word:word;if(c.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);const start=y-(lines.length-1)*lineHeight/2;lines.forEach((v,i)=>c.fillText(v,x,start+i*lineHeight))}
-function preset(){const v=$('#examPreset').value;if(presets[v])setDimensions(...presets[v]);if(v!=='custom')activeMode(v)}
-$('#examPreset').onchange=preset;
-$$('[data-studio]').forEach(b=>b.onclick=()=>{const m=b.dataset.studio;$('#examPreset').value=m;preset();activeMode(m)});
-['outWidth','outHeight','bgColor','brightness','contrast','fitMode','quality','handText','inkColor'].forEach(id=>$('#'+id).addEventListener('input',redraw));
+function preset(){
+const exam=$('#examPreset').value,doc=$('#documentType').value,rule=examRules[exam]?.rules?.[doc];
+if(rule){
+$('#minKB').value=rule.min;$('#maxKB').value=rule.max;$('#outFormat').value=rule.format;
+if(rule.pixels)setDimensions(...rule.pixels);
+else if(doc==='photo')setDimensions(413,531);else if(doc==='signature')setDimensions(472,236);else if(doc==='fingerprint')setDimensions(354,354);else setDimensions(709,354);
+$('#presetNote').innerHTML='<b>'+examRules[exam].name+'</b><br>'+rule.info+'<br><a href="'+examRules[exam].source+'" target="_blank" rel="noopener">Open official source ↗</a><br><span>'+examRules[exam].live+'</span>'+(rule.pixels?'':'<br><b>Pixel dimensions are not stated by this source.</b> The canvas size shown is only a working crop, not an official requirement.');
+}else if(exam==='custom'){$('#presetNote').textContent='Custom mode: enter the exact dimensions and file-size range from your current official notification.'}
+else{$('#presetNote').textContent='This document type is not listed in the selected exam source. Use Custom / other exam and check the current notice.'}
+activeMode(doc);
+}
+$('#examPreset').onchange=preset;$('#documentType').onchange=preset;
+$('[data-studio]').forEach(b=>b.onclick=()=>{$('#documentType').value=b.dataset.studio;preset()});
+['outWidth','outHeight','bgColor','brightness','contrast','fitMode','quality'].forEach(id=>$('#'+id).addEventListener('input',redraw));
 $('#imageUpload').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){alert('Choose an image file.');return}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{source=img;rotation=0;URL.revokeObjectURL(url);$('#studioStatus').textContent='Image loaded: '+file.name;redraw()};img.onerror=()=>{URL.revokeObjectURL(url);alert('Could not open that image. Try JPG or PNG.');};img.src=url};
 $('#rotateImage').onclick=()=>{rotation=(rotation+90)%360;redraw()};
-$('#renderHand').onclick=()=>{source=null;mode='handwriting';redraw();$('#studioStatus').textContent='Handwriting-style preview created. This is not a substitute for genuine handwriting when required.'};
+
 $('#clearSignature').onclick=()=>{pctx.clearRect(0,0,pad.width,pad.height);pctx.fillStyle='#fff';pctx.fillRect(0,0,pad.width,pad.height);$('#studioStatus').textContent='Signature pad cleared.'};
 function point(e){const r=pad.getBoundingClientRect();return{x:(e.clientX-r.left)*pad.width/r.width,y:(e.clientY-r.top)*pad.height/r.height}}
 pad.addEventListener('pointerdown',e=>{drawing=true;last=point(e);pad.setPointerCapture(e.pointerId)});
@@ -39,17 +54,17 @@ pad.addEventListener('pointermove',e=>{if(!drawing)return;const q=point(e);pctx.
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>pad.addEventListener(ev,()=>drawing=false));
 function blob(c,type,q){return new Promise(resolve=>c.toBlob(resolve,type,q))}
 $('#exportExam').onclick=async()=>{
-const [w,h]=dims(),type=$('#outFormat').value,max=Math.max(1,Number($('#maxKB').value)||200);
+const [w,h]=dims(),type=$('#outFormat').value,max=Math.max(1,Number($('#maxKB').value)||200),min=Math.max(0,Number($('#minKB').value)||0);
 let out=document.createElement('canvas');out.width=w;out.height=h;let o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,w,h);
 if(mode==='signature'){o.drawImage(pad,0,0,w,h)}else{o.drawImage(canvas,0,0,w,h)}
 let q=Number($('#quality').value)/100,b=await blob(out,type,q);
 if(!b){$('#studioStatus').textContent='Export failed. Try another format.';return}
 if(type==='image/jpeg'&&b.size>max*1024){while(q>.4&&b.size>max*1024){q=Math.max(.4,q-.08);b=await blob(out,type,q)}}
-if(b.size>max*1024){$('#studioStatus').textContent='File is '+(b.size/1024).toFixed(1)+' KB, above your '+max+' KB limit. Reduce dimensions or use JPG / lower quality.';return}
+if(b.size>max*1024){$('#studioStatus').textContent='File is '+(b.size/1024).toFixed(1)+' KB, above your '+max+' KB limit. Reduce dimensions or use JPG / lower quality.';return}if(b.size<min*1024){$('#studioStatus').textContent='File is '+(b.size/1024).toFixed(1)+' KB, below the required '+min+' KB minimum. Use a clearer original or higher resolution; do not artificially alter the content.';return}
 const a=document.createElement('a'),url=URL.createObjectURL(b);a.href=url;a.download='exam-'+mode+(type==='image/png'?'.png':'.jpg');a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('#studioStatus').textContent='Exported '+w+' × '+h+' px · '+(b.size/1024).toFixed(1)+' KB · '+(type==='image/png'?'PNG':'JPG');
 };
-$('#resetStudio').onclick=()=>{source=null;rotation=0;$('#imageUpload').value='';$('#brightness').value=100;$('#contrast').value=100;$('#quality').value=90;$('#bgColor').value='#ffffff';$('#fitMode').value='cover';$('#handText').value='';$('#clearSignature').click();$('#examPreset').value=mode;preset();$('#studioStatus').textContent='Studio reset.'};
-setDimensions(...presets.photo);pctx.fillStyle='#fff';pctx.fillRect(0,0,pad.width,pad.height);activeMode('photo');return true;
+$('#resetStudio').onclick=()=>{source=null;rotation=0;$('#imageUpload').value='';$('#brightness').value=100;$('#contrast').value=100;$('#quality').value=90;$('#bgColor').value='#ffffff';$('#fitMode').value='cover';$('#documentType').value=mode;$('#clearSignature').click();$('#examPreset').value=mode;preset();$('#studioStatus').textContent='Studio reset.'};
+setDimensions(...presets.photo);pctx.fillStyle='#fff';pctx.fillRect(0,0,pad.width,pad.height);$('#examPreset').value='jee2027';$('#documentType').value='photo';preset();return true;
 })();
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
